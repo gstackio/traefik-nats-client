@@ -36,15 +36,20 @@ end
 def updateFrontendConfiguration(currentConfiguration, routeUpdate)
   uris = routeUpdate['uris']
   frontendConfigurations = currentConfiguration['frontends']
-  frontendConfigurations[uris[0] + '-fe'] = {'routes' => {'route1' => {'rule' => 'Host: ' + uris[0] }},
-                                             'passHostHeader' => true,
-                                             'entryPoints' => ['http', 'https'],
-                                             'backend' => uris[0] + '-be'}
+  uris.each do |uri|
+    frontendConfigurations[uri + '-fe'] = {'routes' => {'route1' => {'rule' => 'Host: ' + uri }},
+                                               'passHostHeader' => true,
+                                               'entryPoints' => ['http', 'https'],
+                                               'backend' => uri + '-be'}
+  end
 end
 
 def updateBackendConfiguration(currentConfiguration, routeUpdate)
-  frontendConfigurations = currentConfiguration['backends']
-  frontendConfigurations[routeUpdate['uris'][0] + '-be'] = {'servers' => {'server1' => {'url' => "http://#{routeUpdate['host']}:#{routeUpdate['port']}" }}}
+  uris = routeUpdate['uris']
+  backendConfigurations = currentConfiguration['backends']
+  uris.each do |uri|
+    backendConfigurations[uri + '-be'] = {'servers' => {'server1' => {'url' => "http://#{routeUpdate['host']}:#{routeUpdate['port']}" }}}
+  end
 end
 
 if ARGV.length>0
