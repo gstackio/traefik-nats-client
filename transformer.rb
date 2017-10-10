@@ -69,9 +69,14 @@ NATS.start(:servers => natsEndpoints) do
     puts "\n"
 
     providers_json = HTTP.headers(:accept => 'application/json')
-      .get('http://traefik.ecf.prototyp.it:18080/api/providers/web').to_s
+      .get('http://traefik.ecf.prototyp.it:18080/api/providers/web');
 
-    traefikWeb = JSON.parse(providers_json)
+    if providers_json.code == 200
+      traefikWeb = JSON.parse(providers_json.to_s)
+    else
+      traefikWeb = {'frontends' => {}, 'backends' => {}}
+    end
+
     puts traefikWeb
     puts "\n"
 
