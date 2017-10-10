@@ -5,8 +5,16 @@ require 'json'
 require 'net/http'
 
 sid = 0
+traefikUrl = URI.parse('http://traefik.ecf.prototyp.it:18080/api/providers/web')
 
-NATS.start(:servers => [ 'nats://nats:nats@10.244.0.6:4222', 'nats://nats:nats@10.244.2.6:4222' ]) do
+if ARGV.length>0
+  natsEndpoints = ARGV[0].split(',')
+else
+  natsEndpoints = [ 'nats://localhost:4222']
+end
+
+
+NATS.start(:servers => natsEndpoints) do
 
   # begin
 
@@ -20,9 +28,11 @@ NATS.start(:servers => [ 'nats://nats:nats@10.244.0.6:4222', 'nats://nats:nats@1
       puts "from #{uri}"
     end
 
-    httpResp = Net::HTTP.get_response(URI.parse('http://traefik.ecf.prototyp.it:18080/api/providers/web'))
+    httpResp = Net::HTTP.get_response(traefikUrl)
     traefikWeb = JSON.parse(httpResp.body)
     puts traefikWeb
+
+    # Net::HTTP.put2(traefikUrl, httpResp.body)
 
     #backend block
 
