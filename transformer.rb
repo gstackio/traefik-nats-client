@@ -3,29 +3,27 @@ require 'nats/client'
 require 'rubygems'
 require 'json'
 require 'http'
-require 'rest_client'
-
 
 def test_code
-  providers_json = HTTP.headers(:accept => "application/json")
-    .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
-  
+  providers_json = HTTP.headers(:accept => 'application/json')
+    .get('http://traefik.ecf.prototyp.it:18080/api/providers/web').to_s
+
   puts "#{providers_json}\n"
-  
+
   providers = JSON.parse(providers_json)
-  
-  providers["backends"]["back-cf-production"]["servers"]["server2"] = {
-    "url" => 'localhost:8080',
-    "weight" => 0
+
+  providers['backends']['back-cf-production']['servers']['server2'] = {
+      'url' => 'localhost:8080',
+      'weight' => 0
   }
 
 
-  HTTP.headers(:accept => "application/json")
-    .put("http://traefik.ecf.prototyp.it:18080/api/providers/web", :json => providers)
+  HTTP.headers(:accept => 'application/json')
+    .put('http://traefik.ecf.prototyp.it:18080/api/providers/web', :json => providers)
 
 
-  providers_json = HTTP.headers(:accept => "application/json")
-    .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
+  providers_json = HTTP.headers(:accept => 'application/json')
+    .get('http://traefik.ecf.prototyp.it:18080/api/providers/web').to_s
 
   puts "#{providers_json}\n"
 end
@@ -35,18 +33,19 @@ end
 
 
 
-def updateFrontend(currentConfiguration, routeUpdate)
+def updateFrontendConfiguration(currentConfiguration, routeUpdate)
   uris = routeUpdate['uris']
   frontendConfigurations = currentConfiguration['frontends']
-  frontendConfigurations.each do |key, value|
-    if key == uris[0] + '-fe'
-      puts frontendConfigurations[key]['routes']
-      #frontendConfigurations[key]['routes']['route1']['rule'] = 'Host: ' + uris[0]
-    end
-  end
-  puts 'Frontend DONE'
+  frontendConfigurations[uris[0] + '-fe'] = {'routes' => {'route1' => {'rule' => 'Host: ' + uris[0] }},
+                                             'passHostHeader' => true,
+                                             'entryPoints' => ['http', 'https'],
+                                             'backend' => uris[0] + '-be'}
 end
 
+def updateBackendConfiguration(currentConfiguration, routeUpdate)
+  frontendConfigurations = currentConfiguration['backends']
+  frontendConfigurations[routeUpdate['uris'][0] + '-be'] = {'servers' => {'server1' => {'url' => "#{routeUpdate['host']}:#{routeUpdate['port']}" }}}
+end
 
 if ARGV.length>0
   natsEndpoints = ARGV[0].split(',')
@@ -69,22 +68,21 @@ NATS.start(:servers => natsEndpoints) do
     end
     puts "\n"
 
-    providers_json = HTTP.headers(:accept => "application/json")
-      .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
+    providers_json = HTTP.headers(:accept => 'application/json')
+      .get('http://traefik.ecf.prototyp.it:18080/api/providers/web').to_s
 
     traefikWeb = JSON.parse(providers_json)
     puts traefikWeb
     puts "\n"
 
-    updateFrontend(traefikWeb, routeMsg)
+    updateFrontendConfiguration(traefikWeb, routeMsg)
+    updateBackendConfiguration(traefikWeb, routeMsg)
 
-    traefikWeb["backends"]["back-cf-production"]["servers"]["server2"] = {
-      "url" => 'localhost:8080',
-      "weight" => 0
-    }
+    puts traefikWeb
+    puts "\n"
 
-    HTTP.headers(:accept => "application/json")
-      .put("http://traefik.ecf.prototyp.it:18080/api/providers/web", :json => traefikWeb)
+    HTTP.headers(:accept => 'application/json')
+    .put('http://traefik.ecf.prototyp.it:18080/api/providers/web', :json => traefikWeb)
 
     #backend block
   }
