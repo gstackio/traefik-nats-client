@@ -2,8 +2,8 @@
 require 'nats/client'
 require 'rubygems'
 require 'json'
+require 'net/http'
 
-pathToToml = ARGV[0]
 sid = 0
 
 NATS.start do
@@ -20,9 +20,12 @@ NATS.start do
       puts "from #{uri}"
     end
 
-    open(pathToToml, 'a') {|f|
-      f.puts "#{routeMsg["host"]}"
-    }
+    httpResp = Net::HTTP.get_response(URI.parse('http://traefik.ecf.prototyp.it:18080/api/providers/web'))
+    traefikWeb = JSON.parse(httpResp.body)
+    puts traefikWeb
+
+    #backend block
+
   }
 
   # rescue SystemExit, Interrupt => e
@@ -32,3 +35,4 @@ NATS.start do
   #   puts 'Bye'
   # end
 end
+
