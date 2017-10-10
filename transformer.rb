@@ -3,16 +3,16 @@ require 'nats/client'
 require 'rubygems'
 require 'json'
 require 'net/http'
+require 'rest_client'
 
 sid = 0
-traefikUrl = URI.parse('http://traefik.ecf.prototyp.it:18080/api/providers/web')
+http = Net::HTTP.new('http://traefik.ecf.prototyp.it', 18080)
 
 if ARGV.length>0
   natsEndpoints = ARGV[0].split(',')
 else
   natsEndpoints = [ 'nats://localhost:4222']
 end
-
 
 NATS.start(:servers => natsEndpoints) do
 
@@ -28,21 +28,19 @@ NATS.start(:servers => natsEndpoints) do
       puts "from #{uri}"
     end
 
-    httpResp = Net::HTTP.get_response(traefikUrl)
+    httpResp = http.request_get('/api/providers/web')
     traefikWeb = JSON.parse(httpResp.body)
     puts traefikWeb
 
-    # Net::HTTP.put2(traefikUrl, httpResp.body)
+    newServer         = {}
+    newServer[:url]  = 'localhost:8080'
+    newServer[:weight] = 0
+    traefikWeb["backends"]["back-cf-production"]["servers"]["server2"] = newServer
+
+    http.request_put('/api/providers/web', JSON.generate(newServer))
 
     #backend block
-
   }
-
-  # rescue SystemExit, Interrupt => e
-  #   puts 'Caught SIGINT'
-  #   NATS.unsubscribe(sid)
-  #   NATS.stop
-  #   puts 'Bye'
-  # end
+  
 end
 
