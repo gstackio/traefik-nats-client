@@ -44,7 +44,7 @@ end
 
 def updateBackendConfiguration(currentConfiguration, routeUpdate)
   frontendConfigurations = currentConfiguration['backends']
-  frontendConfigurations[routeUpdate['uris'][0] + '-be'] = {'servers' => {'server1' => {'url' => "#{routeUpdate['host']}:#{routeUpdate['port']}" }}}
+  frontendConfigurations[routeUpdate['uris'][0] + '-be'] = {'servers' => {'server1' => {'url' => "http://#{routeUpdate['host']}:#{routeUpdate['port']}" }}}
 end
 
 if ARGV.length>0
