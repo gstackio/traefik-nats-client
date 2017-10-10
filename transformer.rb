@@ -6,7 +6,7 @@ require 'net/http'
 
 sid = 0
 
-NATS.start do
+NATS.start(:servers => [ 'nats://nats:nats@10.244.0.6:4222', 'nats://nats:nats@10.244.2.6:4222' ]) do
 
   # begin
 
