@@ -2,4 +2,4 @@
 source "https://rubygems.org"
 
 gem 'nats'
-gem 'rest-client'
+gem 'http'

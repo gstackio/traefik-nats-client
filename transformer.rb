@@ -2,11 +2,38 @@
 require 'nats/client'
 require 'rubygems'
 require 'json'
-require 'net/http'
+require 'http'
 require 'rest_client'
 
-sid = 0
-http = Net::HTTP.new('http://traefik.ecf.prototyp.it', 18080)
+
+def test_code
+  providers_json = HTTP.headers(:accept => "application/json")
+    .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
+  
+  puts "#{providers_json}\n"
+  
+  providers = JSON.parse(providers_json)
+  
+  providers["backends"]["back-cf-production"]["servers"]["server2"] = {
+    "url" => 'localhost:8080',
+    "weight" => 0
+  }
+
+
+  HTTP.headers(:accept => "application/json")
+    .put("http://traefik.ecf.prototyp.it:18080/api/providers/web", :json => providers)
+
+
+  providers_json = HTTP.headers(:accept => "application/json")
+    .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
+
+  puts "#{providers_json}\n"
+end
+
+# test_code
+# exit
+
+
 
 def updateFrontend(currentConfiguration, routeUpdate)
   uris = routeUpdate['uris']
@@ -40,20 +67,24 @@ NATS.start(:servers => natsEndpoints) do
     routeMsg['uris'].each do |uri|
       puts "from #{uri}"
     end
+    puts "\n"
 
-    httpResp = http.request_get('/api/providers/web')
-    traefikWeb = JSON.parse(httpResp.body)
+    providers_json = HTTP.headers(:accept => "application/json")
+      .get("http://traefik.ecf.prototyp.it:18080/api/providers/web").to_s
+
+    traefikWeb = JSON.parse(providers_json)
     puts traefikWeb
+    puts "\n"
 
     updateFrontend(traefikWeb, routeMsg)
 
-    newServer         = {}
-    newServer[:url]  = 'localhost:8080'
-    newServer[:weight] = 0
-    traefikWeb['backends']['back-cf-production']['servers']['server2'] = newServer
+    traefikWeb["backends"]["back-cf-production"]["servers"]["server2"] = {
+      "url" => 'localhost:8080',
+      "weight" => 0
+    }
 
-    #http.request_put('/api/providers/web', JSON.generate(newServer))
-
+    HTTP.headers(:accept => "application/json")
+      .put("http://traefik.ecf.prototyp.it:18080/api/providers/web", :json => traefikWeb)
 
     #backend block
   }
